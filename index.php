@@ -1,3 +1,33 @@
+<?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+require_once 'config/database.php';
+
+// Database connection test
+$dbStatus = 'disconnected';
+$dbMessage = 'Database connection failed';
+$tableCount = 0;
+$tables = [];
+
+try {
+    $database = new Database();
+    $db = $database->getConnection();
+    
+    if ($db) {
+        $dbStatus = 'connected';
+        $dbMessage = 'Database connected successfully';
+        
+        // Test a simple query
+        $stmt = $db->query("SHOW TABLES");
+        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $tableCount = count($tables);
+    }
+} catch (Exception $e) {
+    $dbMessage = 'Connection failed: ' . $e->getMessage();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
