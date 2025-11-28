@@ -352,6 +352,22 @@
             color: var(--dark);
             font-size: 1.2rem;
         }
+        
+        /* Database Status Styles */
+        .db-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -359,24 +375,24 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <img 
-    src="./images/Trek Logo.png" 
-    alt="Forest Trekking Logo" 
-    class="img-fluid" 
-    style="
-      max-height: 40px; 
-      width: auto; 
-      object-fit: contain; 
-      background: transparent; 
-      filter: brightness(1.8) contrast(1.1);
-    "
-  >
-    </div>
+                src="./images/Trek Logo.png" 
+                alt="Forest Trekking Logo" 
+                class="img-fluid" 
+                style="
+                    max-height: 40px; 
+                    width: auto; 
+                    object-fit: contain; 
+                    background: transparent; 
+                    filter: brightness(1.8) contrast(1.1);
+                "
+            >
+        </div>
         
         <nav class="sidebar-nav">
             <ul class="nav flex-column">
                 <!-- Dashboard -->
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php">
+                    <a class="nav-link active" href="index.php">
                         <i class="bi bi-speedometer2"></i>Dashboard
                     </a>
                 </li>
@@ -453,9 +469,9 @@
                 <!-- Centered Logo -->
                 <div class="centered-logo">
                     <img 
-                    src="./images/Tn Logo.png" 
-                    alt="Forest Logo" 
-                    class="img-fluid d-inline-block align-top">
+                        src="./images/Tn Logo.png" 
+                        alt="Forest Logo" 
+                        class="img-fluid d-inline-block align-top">
                 </div>
 
                 <!-- User Menu -->
@@ -483,6 +499,33 @@
 
         <!-- Dashboard Content -->
         <div class="container-fluid py-3">
+            <!-- Database Status Indicator -->
+            <?php
+            require_once 'config/database.php';
+            
+            $dbStatus = 'danger';
+            $dbMessage = 'Database Disconnected';
+            $tableCount = 0;
+            $tables = [];
+            
+            try {
+                $database = new Database();
+                $db = $database->getConnection();
+                
+                if ($db) {
+                    $dbStatus = 'success';
+                    $dbMessage = 'Database Connected';
+                    
+                    // Get table count
+                    $stmt = $db->query("SHOW TABLES");
+                    $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                    $tableCount = count($tables);
+                }
+            } catch (Exception $e) {
+                $dbMessage = 'Connection Failed: ' . $e->getMessage();
+            }
+            ?>
+            
             <!-- Header with Filter -->
             <div class="row compact-row">
                 <div class="col-12">
@@ -564,11 +607,11 @@
                     <div class="dashboard-card kpi-card compact-card">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h4 class="fw-bold text-info mb-1">156</h4>
-                                <p class="text-muted mb-0 small-text">Inventory Items</p>
+                                <h4 class="fw-bold text-info mb-1"><?php echo $tableCount; ?></h4>
+                                <p class="text-muted mb-0 small-text">Database Tables</p>
                             </div>
                             <div class="kpi-icon bg-info bg-opacity-10 text-info">
-                                <i class="bi bi-box-seam"></i>
+                                <i class="bi bi-database"></i>
                             </div>
                         </div>
                     </div>
@@ -798,7 +841,96 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Database Information Section -->
+            <div class="row g-2 mt-2">
+                <div class="col-12">
+                    <div class="dashboard-card compact-card">
+                        <div class="table-header-container">
+                            <h6 class="fw-bold mb-0">System Information</h6>
+                            <span class="badge bg-<?php echo $dbStatus; ?> small"><?php echo $dbMessage; ?></span>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold text-primary mb-2">Available Pages:</h6>
+                                <div class="row">
+                                    <?php
+                                    $pages = [
+                                        'category.php' => 'Categories',
+                                        'items.php' => 'Items', 
+                                        'trails.php' => 'Forest Trails',
+                                        'trekkers_data.php' => 'Trekkers Data',
+                                        'purchase_order.php' => 'Purchase Orders',
+                                        'stock_transfer.php' => 'Stock Transfer',
+                                        'reports.php' => 'Reports',
+                                        'supplier.php' => 'Suppliers',
+                                        'food_menu.php' => 'Food Menu',
+                                        'order_status.php' => 'Order Status',
+                                        'live_stocks.php' => 'Live Stocks'
+                                    ];
+                                    
+                                    $chunkSize = ceil(count($pages) / 2);
+                                    $pageChunks = array_chunk($pages, $chunkSize, true);
+                                    
+                                    foreach ($pageChunks as $chunk) {
+                                        echo '<div class="col-sm-6">';
+                                        echo '<ul class="list-unstyled small-text">';
+                                        foreach ($chunk as $file => $name) {
+                                            $fileExists = file_exists($file);
+                                            $badgeClass = $fileExists ? 'bg-success' : 'bg-secondary';
+                                            $badgeText = $fileExists ? 'Live' : 'Missing';
+                                            
+                                            echo '<li class="mb-1">';
+                                            echo '<a href="' . $file . '" class="text-decoration-none">' . $name . '</a>';
+                                            echo ' <span class="badge ' . $badgeClass . ' small">' . $badgeText . '</span>';
+                                            echo '</li>';
+                                        }
+                                        echo '</ul>';
+                                        echo '</div>';
+                                    }
+                                    ?>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="fw-bold text-success mb-2">Database Tables (<?php echo $tableCount; ?>):</h6>
+                                <?php if ($tableCount > 0): ?>
+                                    <div class="row">
+                                        <?php
+                                        $tableChunks = array_chunk($tables, ceil(count($tables) / 2));
+                                        foreach ($tableChunks as $chunk) {
+                                            echo '<div class="col-sm-6">';
+                                            echo '<ul class="list-unstyled small-text">';
+                                            foreach ($chunk as $table) {
+                                                echo '<li class="mb-1">';
+                                                echo '<i class="bi bi-table text-primary me-1"></i>';
+                                                echo htmlspecialchars($table);
+                                                echo '</li>';
+                                            }
+                                            echo '</ul>';
+                                            echo '</div>';
+                                        }
+                                        ?>
+                                    </div>
+                                <?php else: ?>
+                                    <p class="text-muted small-text">No tables found in database</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <!-- Database Status Badge -->
+    <div class="db-status">
+        <span class="status-badge bg-<?php echo $dbStatus; ?> text-white">
+            <i class="bi bi-database me-1"></i>
+            <?php echo $dbMessage; ?>
+            <?php if ($tableCount > 0): ?>
+                <span class="ms-1">(<?php echo $tableCount; ?> tables)</span>
+            <?php endif; ?>
+        </span>
     </div>
 
     <!-- Bootstrap JS -->
